@@ -1,5 +1,43 @@
-// переопределяем ns.history.js, чтобы он работал через хеш, а не через History API
+/**
+ * Принудительно перезагружает страницу.
+ * @description Этот метод не вызывает ns.page.go, а делает полную перезагрузку страницы.
+ * @param {String} [hash=location.hash]  Хэш, с которым перезагрузить страницу
+ */
+ns.page.forceReload = function(hash) {
+    var location = window.location;
+    window.removeEventListener('hashchange', ns.history.onpopstate, false);
+    location.replace(hash || location.hash);
+    location.reload();
+};
 
+/**
+ * Тихо заменяет хеш страницы, не вызывая никаких событий и не меняя никакого состояния.
+ * @param {string} newHash Новый хеш страницы.
+ */
+ns.page.hashReplace = function(newHash) {
+    if (!newHash) { //если хэша нет, то будет /neo2/undefined
+        return false;
+    }
+
+    ns.page._forceHashChange = newHash;
+
+    // Странное поведение FF
+    // если из iframe менять хэш, то заменится и location на iframe.location.href + newHash.
+    // но если писать весь урл целиком, то всё хорошо
+    var new_loc = window.location.href.toString().replace(/#.+$/, '') + newHash;
+    window.location.replace(new_loc);
+
+    return true;
+};
+
+/**
+ * Запоминаем состояние hash, чтобы не делать двойные переходы.
+ * @private
+ * @type {string}
+ */
+ns.page._forceHashChange = null;
+
+// переопределяем ns.history.js, чтобы он работал через хеш, а не через History API
 ns.router.URL_FIRST_SYMBOL = '#';
 
 /**
@@ -15,7 +53,7 @@ ns.history.init = function() {
  * @param {string} title
  */
 ns.history.pushState = function(url, title) {
-    ns.page.forceHashChange = url;
+    ns.page._forceHashChange = url;
     console.log('ns.history.pushState', url, title);
     window.location.href = url;
 };
@@ -26,7 +64,7 @@ ns.history.pushState = function(url, title) {
  * @param {string} title
  */
 ns.history.replaceState = function(url, title) {
-    ns.page.forceHashChange = url;
+    ns.page._forceHashChange = url;
     console.log('ns.history.replaceState', url, title);
     window.location.replace(url);
 };
@@ -37,7 +75,7 @@ ns.history.replaceState = function(url, title) {
 ns.history.onpopstate = function() {
     var hash = ns.page.getCurrentUrl();
 
-    var forceHashChange = ns.page.forceHashChange;
+    var forceHashChange = ns.page._forceHashChange;
     var forceHashChange_decoded;
     try {
         forceHashChange_decoded = decodeURIComponent(forceHashChange);
