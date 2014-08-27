@@ -45,6 +45,7 @@ ns.router.URL_FIRST_SYMBOL = '#';
  */
 ns.history.init = function() {
     window.addEventListener('hashchange', ns.history.onpopstate, false);
+    $(document).on('click', 'a', ns.history._onAnchorClick);
 };
 
 /**
@@ -54,7 +55,6 @@ ns.history.init = function() {
  */
 ns.history.pushState = function(url, title) {
     ns.page._forceHashChange = url;
-    console.log('ns.history.pushState', url, title);
     window.location.href = url;
 };
 
@@ -65,7 +65,6 @@ ns.history.pushState = function(url, title) {
  */
 ns.history.replaceState = function(url, title) {
     ns.page._forceHashChange = url;
-    console.log('ns.history.replaceState', url, title);
     window.location.replace(url);
 };
 
